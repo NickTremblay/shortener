@@ -6,6 +6,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"net/http"
 	"os"
 
 	firebase "firebase.google.com/go/v4"
@@ -82,7 +83,29 @@ func main () {
 	// define routes
 	////////////////
 
+	// keep this route last or else users can override hard coded routes lol
+	router.GET("/:linkId", func(c *gin.Context) {
+        linkId := c.Param("linkId") 
+        linkDoc, err := dbClient.Collection("links").Doc(linkId).Get(ctx)
+		if(err != nil) { 
+			// todo: 401 html 
+			c.String(http.StatusInternalServerError, "fuck")
+			log.Fatalf("error searching for link: %v\n", err)
+		} 
 
+    	if(linkDoc.Data() != nil){ 
+			expandedUrl, err := linkDoc.DataAt("url")
+			if(err != nil) { 
+				c.String(http.StatusInternalServerError, "fuck")
+				log.Fatalf("error binding expandedUrl: %v\n", err)
+			}
+
+			c.Redirect(http.StatusPermanentRedirect, expandedUrl.(string))
+		} else { 
+		// todo: 404 html 
+		c.String(http.StatusNotFound, "not found")
+	   }
+    })
 
 	//////////
 	// run gin
