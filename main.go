@@ -89,8 +89,7 @@ func main () {
         linkDoc, err := dbClient.Collection("links").Doc(linkId).Get(ctx)
 		if(err != nil) { 
 			// todo: 401 html 
-			c.String(http.StatusInternalServerError, "fuck")
-			log.Fatalf("error searching for link: %v\n", err)
+			log.Printf("error searching for link: %v\n", err)
 		} 
 
     	if(linkDoc.Data() != nil){ 
