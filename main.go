@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -38,7 +39,20 @@ func main () {
 	}
 
 	if err := godotenv.Load(envFile); err != nil {
-		log.Fatal(err)
+		log.Fatalf("error loading env variables: %v\n", err)
+	}
+
+	// todo: unbad env var lookup. flag system maybe? 
+
+	linkIdLengthEnvVar, linkIdLengthEnvVarExists := os.LookupEnv("LINK_ID_LENGTH")
+	if(!linkIdLengthEnvVarExists || linkIdLengthEnvVar == "") { 
+		log.Println("'LINK_ID_LENGTH' environment variable undefined, defaulting to 6")
+		linkIdLengthEnvVar = "6"
+	}
+	linkIdLength, err := strconv.Atoi(linkIdLengthEnvVar)
+	if(err != nil) { 
+		log.Printf("error parsing LINK_ID_LENGTH env var, defaulting to 6: %v\n", err)
+		linkIdLength = 6
 	}
 
 	////////////////
@@ -93,8 +107,7 @@ func main () {
 		// Todo: restrict this route to requests w auth token w verified uri email
 		// token := c.Request.Header["Token"]
 
-		// Todo: admin-configurable id length
-		newId, err := generateLinkId(4, &ctx, dbClient)
+		newId, err := generateLinkId(uint(linkIdLength), &ctx, dbClient)
 		if err != nil { 
 			log.Printf("error generating link id: %s", err)
 			c.String(http.StatusInternalServerError, err.Error())
@@ -123,6 +136,7 @@ func main () {
 			c.String(http.StatusInternalServerError, err.Error())
         }
 
+		//todo: unbad
 		c.String(http.StatusOK, "http://" + c.Request.URL.Host + "/" + newId)
 	})
 
